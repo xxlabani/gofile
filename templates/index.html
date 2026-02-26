@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gofile Direct Link Uploader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .upload-hint {
+            color: #718096;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .selected-file {
+            background: #f0f4ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            color: #667eea;
+            font-size: 24px;
+        }
+
+        .file-name {
+            color: #2d3748;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-size {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 5px;
+        }
+
+        .remove-file:hover {
+            color: #c53030;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 20px 0;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-area {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #4a5568;
+            margin-top: 10px;
+        }
+
+        .result-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0fff4;
+            border: 2px solid #9ae6b4;
+            border-radius: 10px;
+            display: {% if success %}block{% else %}none{% endif %};
+        }
+
+        .result-icon {
+            color: #38a169;
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            color: #276749;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .link-box {
+            background: white;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+
+        .link-label {
+            color: #4a5568;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .direct-link {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .direct-link:hover {
+            text-decoration: underline;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .copy-btn:hover {
+            background: #5a67d8;
+        }
+
+        .alert {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .file-types {
+            color: #718096;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #a0aec0;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Gofile Direct Link Uploader</h1>
+        <p class="subtitle">Upload files and get instant direct download links</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">
+                        ⚠️ {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if success %}
+        <div class="result-area" style="display: block;">
+            <div class="result-icon">✅</div>
+            <div class="result-title">Upload Successful!</div>
+            
+            <div class="link-box">
+                <div class="link-label">📁 File Name:</div>
+                <div style="color: #2d3748;">{{ file_name }}</div>
+            </div>
+
+            <div class="link-box">
+                <div class="link-label">🔗 Direct Download Link:</div>
+                <a href="{{ direct_link }}" class="direct-link" target="_blank">{{ direct_link }}</a>
+            </div>
+
+            <div class="link-box">
+                <div class="link-label">🌐 Download Page:</div>
+                <a href="{{ download_page }}" class="direct-link" target="_blank">{{ download_page }}</a>
+            </div>
+
+            <div class="link-box">
+                <div class="link-label">🆔 File ID:</div>
+                <div style="color: #718096;">{{ file_id }}</div>
+            </div>
+
+            <button class="copy-btn" onclick="copyToClipboard('{{ direct_link }}')">
+                📋 Copy Direct Link
+            </button>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/" style="color: #667eea; text-decoration: none;">← Upload another file</a>
+            </div>
+        </div>
+        {% else %}
+        <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/upload">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drag & drop your file here or click to browse</div>
+                <div class="upload-hint">Maximum file size: 100MB</div>
+                <input type="file" name="file" id="fileInput" class="file-input" required>
+            </div>
+
+            <div id="selectedFile" class="selected-file" style="display: none;">
+                <div class="file-info">
+                    <span class="file-icon">📄</span>
+                    <div>
+                        <div class="file-name" id="fileName"></div>
+                        <div class="file-size" id="fileSize"></div>
+                    </div>
+                </div>
+                <button type="button" class="remove-file" onclick="removeFile()">✕</button>
+            </div>
+
+            <div class="progress-area" id="progressArea">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Uploading... 0%</div>
+            </div>
+
+            <button type="submit" class="upload-btn" id="uploadBtn" disabled>
+                Upload to Gofile
+            </button>
+        </form>
+
+        <div class="file-types">
+            Supported file types: All common formats (images, documents, archives, audio, video)
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>Files are uploaded to <a href="https://gofile.io" target="_blank">Gofile.io</a> • Free direct links • No account required</p>
+            <p style="margin-top: 10px;">⚡ Deployed on Render • Made with Python Flask</p>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const progressArea = document.getElementById('progressArea');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect();
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                
+                // Check file size (100MB limit)
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('File is too large! Maximum size is 100MB.');
+                    fileInput.value = '';
+                    return;
+                }
+
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                selectedFile.style.display = 'flex';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            selectedFile.style.display = 'none';
+            uploadBtn.disabled = true;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(uploadForm);
+            const xhr = new XMLHttpRequest();
+
+            // Show progress bar
+            progressArea.style.display = 'block';
+            uploadBtn.disabled = true;
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Success - page will reload with result
+                    document.open();
+                    document.write(xhr.responseText);
+                    document.close();
+                } else {
+                    alert('Upload failed. Please try again.');
+                    progressArea.style.display = 'none';
+                    uploadBtn.disabled = false;
+                }
+            };
+
+            xhr.onerror = function() {
+                alert('Upload failed. Please check your connection and try again.');
+                progressArea.style.display = 'none';
+                uploadBtn.disabled = false;
+            };
+
+            xhr.open('POST', '/upload', true);
+            xhr.send(formData);
+        });
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Link copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
